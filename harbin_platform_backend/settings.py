@@ -91,7 +91,7 @@ WSGI_APPLICATION = 'harbin_platform_backend.wsgi.application'
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql",
+        'ENGINE': 'django.contrib.gis.db.backends.postgis',
         "NAME": "harbin_platform",
         "USER": "postgres",
         "PASSWORD": "Map12345",

@@ -3,13 +3,27 @@ from .models import RoadHourlyFlow
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .models import BfmapWay, Highway
+from shapely import wkb
 
 @api_view(['GET'])
 def list_all_bfmap_ways(request):
-    ways = BfmapWay.objects.all().values(
-        'gid', 'osm_id', 'class_id', 'road_name'
-    )
-    return Response(list(ways))
+    all_ways = BfmapWay.objects.all()
+
+    results = []
+    for way in all_ways:
+        coords = []
+        if way.geom:
+            shapely_geom = wkb.loads(bytes(way.geom.ewkb))  # 解析 LineString
+            coords = [[pt[0], pt[1]] for pt in shapely_geom.coords]
+
+        results.append({
+            "gid": way.gid,
+            "osm_id": way.osm_id,
+            "class_id": way.class_id,
+            "road_name": way.road_name,
+            "coord_list": coords,
+        })
+    return Response(results)
 
 
 @api_view(['GET'])
@@ -30,18 +44,32 @@ def filter_bfmap_ways(request):
     if road_name:
         queryset = queryset.filter(road_name__icontains=road_name)
 
-    ways = list(queryset.values('gid', 'osm_id', 'class_id', 'road_name'))
-
-    # 加 highway 类型名（class_id 对应 highway.id）
-    class_ids = set(w['class_id'] for w in ways if w['class_id'] is not None)
+    # 获取 class_id → highway name 映射
+    class_ids = queryset.values_list('class_id', flat=True).distinct()
     highway_map = {
         h.id: h.name for h in Highway.objects.filter(id__in=class_ids)
     }
 
-    for w in ways:
-        w['highway_type'] = highway_map.get(w['class_id'], None)
+    results = []
+    for way in queryset:
+        coords = []
+        if way.geom:
+            try:
+                shapely_geom = wkb.loads(bytes(way.geom.ewkb))
+                coords = [[pt[0], pt[1]] for pt in shapely_geom.coords]
+            except Exception as e:
+                print(f"Error parsing geometry for gid {way.gid}: {e}")
 
-    return Response(ways)
+        results.append({
+            "gid": way.gid,
+            "osm_id": way.osm_id,
+            "class_id": way.class_id,
+            "road_name": way.road_name,
+            "highway_type": highway_map.get(way.class_id),
+            "coord_list": coords
+        })
+
+    return Response(results)
 
 @api_view(['GET'])
 def list_ways(request):
