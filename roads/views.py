@@ -1,7 +1,48 @@
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
 from .models import Way
 from .models import RoadHourlyFlow
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from .models import BfmapWay, Highway
+
+@api_view(['GET'])
+def list_all_bfmap_ways(request):
+    ways = BfmapWay.objects.all().values(
+        'gid', 'osm_id', 'class_id', 'road_name'
+    )
+    return Response(list(ways))
+
+
+@api_view(['GET'])
+def filter_bfmap_ways(request):
+    queryset = BfmapWay.objects.all()
+
+    gid = request.GET.get('gid')
+    osm_id = request.GET.get('osm_id')
+    class_id = request.GET.get('class_id')
+    road_name = request.GET.get('road_name')
+
+    if gid:
+        queryset = queryset.filter(gid=gid)
+    if osm_id:
+        queryset = queryset.filter(osm_id=osm_id)
+    if class_id:
+        queryset = queryset.filter(class_id=class_id)
+    if road_name:
+        queryset = queryset.filter(road_name__icontains=road_name)
+
+    ways = list(queryset.values('gid', 'osm_id', 'class_id', 'road_name'))
+
+    # 加 highway 类型名（class_id 对应 highway.id）
+    class_ids = set(w['class_id'] for w in ways if w['class_id'] is not None)
+    highway_map = {
+        h.id: h.name for h in Highway.objects.filter(id__in=class_ids)
+    }
+
+    for w in ways:
+        w['highway_type'] = highway_map.get(w['class_id'], None)
+
+    return Response(ways)
+
 @api_view(['GET'])
 def list_ways(request):
     ways = Way.objects.all().values('id', 'tags', 'nodes')[:100]

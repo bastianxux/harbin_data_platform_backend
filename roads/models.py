@@ -1,6 +1,35 @@
 from django.db import models
 from django.contrib.postgres.fields import HStoreField
 from django.contrib.postgres.fields import ArrayField
+from django.contrib.gis.db import models as gis_models
+
+class BfmapWay(models.Model):
+    gid = models.BigAutoField(primary_key=True)
+    osm_id = models.BigIntegerField(null=True)
+    class_id = models.IntegerField(null=True)
+    source = models.BigIntegerField(null=True)
+    target = models.BigIntegerField(null=True)
+    length = models.FloatField(null=True)
+    reverse = models.FloatField(null=True)
+    maxspeed_forward = models.IntegerField(null=True)
+    maxspeed_backward = models.IntegerField(null=True)
+    priority = models.FloatField(null=True)
+    geom = gis_models.LineStringField(srid=4326, null=True)
+    road_name = models.TextField(null=True)
+
+    class Meta:
+        db_table = 'bfmap_ways'
+        managed = False
+
+class Highway(models.Model):
+    id = models.IntegerField(primary_key=True)
+    name = models.TextField()
+    priority = models.FloatField(null=True)
+    maxspeed = models.IntegerField(null=True)
+
+    class Meta:
+        db_table = 'highway'
+        managed = False
 
 
 class Way(models.Model):

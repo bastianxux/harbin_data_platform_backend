@@ -13,6 +13,10 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from pathlib import Path
 import os
 
+GDAL_LIBRARY_PATH = '/opt/homebrew/opt/gdal/lib/libgdal.dylib'
+GEOS_LIBRARY_PATH = '/opt/homebrew/opt/geos/lib/libgeos_c.dylib'
+
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -37,6 +41,7 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 INSTALLED_APPS = [
+    'django.contrib.gis',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',

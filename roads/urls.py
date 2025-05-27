@@ -1,7 +1,10 @@
 from django.urls import path
-from .views import list_ways, road_flow
+from . import views
 
 urlpatterns = [
-    path('ways/', list_ways),
-    path('road-flow/',  road_flow),       # 新增：按天取路段 24h 流量
+    path('ways/', views.list_ways),
+    path('road-flow/',  views.road_flow),
+    path('bfmap_ways/', views.list_all_bfmap_ways),
+    path('bfmap_ways/filter/', views.filter_bfmap_ways),
+    # 新增：按天取路段 24h 流量
 ]
