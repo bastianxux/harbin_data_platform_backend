@@ -1,5 +1,5 @@
 from .models import Way
-from .models import RoadHourlyFlow
+from .models import RoadHourlyFlow, RoadDayFlow
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .models import BfmapWay, Highway
@@ -93,3 +93,40 @@ def road_flow(request):
             .values('hour', 'traffic_cnt')[:24])   # 最多 24 行
 
     return Response(list(qs))
+
+@api_view(['GET'])
+def road_day_flow(request):
+    """
+    /api/road-day-flow/?road_ids=3,7,12&date=2015-01-03
+    返回:
+      [
+        {"road_id":3,  "traffic_cnt":42},
+        {"road_id":7,  "traffic_cnt": 0},
+        {"road_id":12, "traffic_cnt":18}
+      ]
+    """
+    road_ids_param = request.GET.get('road_ids')
+    date_param     = request.GET.get('date')
+
+    if not (road_ids_param and date_param):
+        return Response(
+            {"detail": "road_ids 和 date 都要传"},
+            status=400
+        )
+
+    try:
+        req_ids = [int(s) for s in road_ids_param.split(',') if s.strip()]
+    except ValueError:
+        return Response({"detail": "road_ids 必须是整数列表"}, status=400)
+
+    # 查数据库
+    qs = (RoadDayFlow.objects
+            .filter(biz_date=date_param, road_id__in=req_ids)
+            .values('road_id', 'traffic_cnt'))
+
+    result_map = {rid: 0 for rid in req_ids}
+    for row in qs:
+        result_map[row['road_id']] = row['traffic_cnt']
+
+    resp = [{'road_id': rid, 'traffic_cnt': result_map[rid]} for rid in req_ids]
+    return Response(resp)

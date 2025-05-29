@@ -51,3 +51,13 @@ class RoadHourlyFlow(models.Model):
         db_table = 'road_hourly_flow'   # 就是那个物化视图
         managed  = False                # 告诉 Django：不用它来建表
         unique_together = (('biz_date', 'road_id', 'hour'),)
+
+class RoadDayFlow(models.Model):
+    biz_date    = models.DateField()
+    road_id     = models.BigIntegerField()
+    traffic_cnt = models.IntegerField()
+
+    class Meta:
+        db_table  = 'road_day_flow'   # 你的物化视图名称
+        managed   = False             # 别让 migrate 去动它
+        unique_together = (('biz_date', 'road_id'),)

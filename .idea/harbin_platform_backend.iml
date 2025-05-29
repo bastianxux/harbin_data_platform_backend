@@ -18,7 +18,7 @@
       <excludeFolder url="file://$MODULE_DIR$/trips" />
       <excludeFolder url="file://$MODULE_DIR$/trips_road_id" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.9 (harbin_data_platform_backend)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.9 (harbin_platform_backend)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="TemplatesService">

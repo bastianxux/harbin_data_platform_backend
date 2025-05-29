@@ -18,5 +18,5 @@ Including another URLconf
 from django.urls import path, include
 urlpatterns = [
     path("api/", include("api.urls")),
-    path('api/', include('roads.urls')),  # 挂载到 /api/
+    path('api/', include('roads.urls')),
 ]
