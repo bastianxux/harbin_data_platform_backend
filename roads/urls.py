@@ -10,5 +10,6 @@ urlpatterns = [
     path('top-roads/', views.top_n_roads_by_day),
     path('top-roads-by-hour/', views.top_n_roads_by_hour),
     path('top-roads-by-peak/', views.top_n_roads_by_peak_period),
+    path('roads-by-highway-type/', views.roads_by_highway_type),
     # 新增：按天取路段 24h 流量
 ]

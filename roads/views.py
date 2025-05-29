@@ -4,6 +4,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .models import BfmapWay, Highway
 from shapely import wkb
+from .models import RoadHighwayMapping
 
 
 @api_view(["GET"])
@@ -220,3 +221,28 @@ def top_n_roads_by_peak_period(request):
         .values("road_id", "trip_count", "peak_period")[:top_n]
     )
     return Response(list(qs))
+
+@api_view(["GET"])
+def roads_by_highway_type(request):
+    """
+    /api/roads-by-highway-type/?highway_name=xxx 或 ?highway_id=123
+    返回: [road_id1, road_id2, ...]
+    """
+    highway_name = request.GET.get("highway_name")
+    highway_id = request.GET.get("highway_id")
+
+    if not (highway_name or highway_id):
+        return Response({"detail": "highway_name 或 highway_id 必须传一个"}, status=400)
+
+    qs = RoadHighwayMapping.objects.all()
+    if highway_name:
+        qs = qs.filter(highway_name=highway_name)
+    if highway_id:
+        try:
+            highway_id = int(highway_id)
+        except ValueError:
+            return Response({"detail": "highway_id 必须为整数"}, status=400)
+        qs = qs.filter(highway_id=highway_id)
+
+    road_ids = list(qs.values_list("road_id", flat=True))
+    return Response(road_ids)

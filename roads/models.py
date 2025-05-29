@@ -91,3 +91,12 @@ class RoadPeakPeriodCount(models.Model):
     class Meta:
         db_table = 'road_peak_period_count'
         managed = False
+
+class RoadHighwayMapping(models.Model):
+    road_id = models.BigIntegerField()
+    highway_name = models.TextField()
+    highway_id = models.IntegerField()
+
+    class Meta:
+        db_table = 'road_highway_mapping'
+        managed = False
