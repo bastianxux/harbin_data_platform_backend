@@ -193,3 +193,30 @@ def top_n_roads_by_hour(request):
     )
 
     return Response(list(qs))
+
+@api_view(["GET"])
+def top_n_roads_by_peak_period(request):
+    """
+    /api/top-roads-by-peak/?peak_period=Morning Peak&n=10
+    返回: [{"road_id": "xyz", "trip_count": 100, "peak_period": "Morning Peak"}, ... ]
+    """
+    peak_period = request.GET.get("peak_period")
+    top_n_str = request.GET.get("n")
+
+    if not (peak_period and top_n_str):
+        return Response({"detail": "peak_period 和 n 都是必须的参数"}, status=400)
+
+    try:
+        top_n = int(top_n_str)
+        if top_n <= 0:
+            raise ValueError("n 必须是正整数")
+    except ValueError as e:
+        return Response({"detail": f"无效的n参数: {e}"}, status=400)
+
+    from .models import RoadPeakPeriodCount
+    qs = (
+        RoadPeakPeriodCount.objects.filter(peak_period=peak_period)
+        .order_by("-trip_count")
+        .values("road_id", "trip_count", "peak_period")[:top_n]
+    )
+    return Response(list(qs))

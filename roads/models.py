@@ -82,3 +82,12 @@ class RoadHourlyCount(models.Model):
         managed = False
         db_table = "road_hourly_count"
         unique_together = (("road_id", "hour_of_day"),)
+
+class RoadPeakPeriodCount(models.Model):
+    road_id = models.TextField()
+    peak_period = models.TextField()  # 取值为 Morning Peak, Normal, Evening Peak
+    trip_count = models.BigIntegerField()
+
+    class Meta:
+        db_table = 'road_peak_period_count'
+        managed = False
