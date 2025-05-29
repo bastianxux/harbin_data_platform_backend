@@ -62,13 +62,23 @@ class RoadDayFlow(models.Model):
         managed   = False             # 别让 migrate 去动它
         unique_together = (('biz_date', 'road_id'),)
 
+
 class RoadDailyCount(models.Model):
     road_id = models.TextField()
     date = models.DateField()
     trip_count = models.BigIntegerField()
 
     class Meta:
-        db_table = 'road_daily_count'
-        managed = False  # 假设表已存在，Django不管理其创建/修改
-        # 如果需要，可以添加 unique_together 或其他约束
-        # unique_together = (('date', 'road_id'),)
+        db_table = "road_daily_count"
+        managed = False
+
+
+class RoadHourlyCount(models.Model):
+    road_id = models.TextField()
+    hour_of_day = models.IntegerField()  # 0-23
+    trip_count = models.BigIntegerField()
+
+    class Meta:
+        managed = False
+        db_table = "road_hourly_count"
+        unique_together = (("road_id", "hour_of_day"),)

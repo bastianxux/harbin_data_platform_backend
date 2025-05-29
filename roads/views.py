@@ -1,5 +1,5 @@
 from .models import Way
-from .models import RoadHourlyFlow, RoadDayFlow
+from .models import RoadHourlyFlow, RoadDayFlow, RoadDailyCount, RoadHourlyCount
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .models import BfmapWay, Highway
@@ -119,8 +119,6 @@ def top_n_roads_by_day(request):
     except ValueError as e:
         return Response({"detail": f"无效的n参数: {e}"}, status=400)
 
-    # 假设模型名为 RoadDailyCount，并且它有一个 date 字段和一个 trip_count 字段
-    # 以及一个 road_id 字段 (通常是 CharField 或 ForeignKey)
     qs = (
         RoadDailyCount.objects.filter(date=target_date)
         .order_by("-trip_count")
@@ -128,6 +126,7 @@ def top_n_roads_by_day(request):
     )
 
     return Response(list(qs))
+
 @api_view(['GET'])
 def road_day_flow(request):
     """
@@ -164,3 +163,33 @@ def road_day_flow(request):
 
     resp = [{'road_id': rid, 'traffic_cnt': result_map[rid]} for rid in req_ids]
     return Response(resp)
+
+@api_view(["GET"])
+def top_n_roads_by_hour(request):
+    """
+    /api/top-roads-by-hour/?hour=<hour_of_day>&n=<count>
+    返回: [{"road_id": "xyz", "trip_count": 100}, ... ]
+    """
+    hour_str = request.GET.get("hour")
+    top_n_str = request.GET.get("n")
+
+    if not (hour_str and top_n_str):
+        return Response({"detail": "hour 和 n 都是必须的参数"}, status=400)
+
+    try:
+        hour = int(hour_str)
+        top_n = int(top_n_str)
+        if not (0 <= hour <= 23):
+            raise ValueError("hour 必须在 0 到 23 之间")
+        if top_n <= 0:
+            raise ValueError("n 必须是正整数")
+    except ValueError as e:
+        return Response({"detail": f"无效的参数: {e}"}, status=400)
+
+    qs = (
+        RoadHourlyCount.objects.filter(hour_of_day=hour)
+        .order_by("-trip_count")
+        .values("road_id", "trip_count")[:top_n]
+    )
+
+    return Response(list(qs))
