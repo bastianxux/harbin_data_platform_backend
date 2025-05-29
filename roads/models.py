@@ -51,3 +51,14 @@ class RoadHourlyFlow(models.Model):
         db_table = 'road_hourly_flow'   # 就是那个物化视图
         managed  = False                # 告诉 Django：不用它来建表
         unique_together = (('biz_date', 'road_id', 'hour'),)
+
+class RoadDailyCount(models.Model):
+    road_id = models.TextField()
+    date = models.DateField()
+    trip_count = models.BigIntegerField()
+
+    class Meta:
+        db_table = 'road_daily_count'
+        managed = False  # 假设表已存在，Django不管理其创建/修改
+        # 如果需要，可以添加 unique_together 或其他约束
+        # unique_together = (('date', 'road_id'),)

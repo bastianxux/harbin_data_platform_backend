@@ -6,5 +6,6 @@ urlpatterns = [
     path('road-flow/',  views.road_flow),
     path('bfmap_ways/', views.list_all_bfmap_ways),
     path('bfmap_ways/filter/', views.filter_bfmap_ways),
+    path('top-roads/', views.top_n_roads_by_day),
     # 新增：按天取路段 24h 流量
 ]
