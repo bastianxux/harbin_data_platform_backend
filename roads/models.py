@@ -75,6 +75,7 @@ class RoadDailyCount(models.Model):
 
 
 class RoadHourlyCount(models.Model):
+    date = models.DateField()
     road_id = models.TextField()
     hour_of_day = models.IntegerField()  # 0-23
     trip_count = models.BigIntegerField()
@@ -83,7 +84,7 @@ class RoadHourlyCount(models.Model):
     class Meta:
         managed = False
         db_table = "road_hourly_count"
-        unique_together = (("road_id", "hour_of_day"),)
+        unique_together = (("road_id", "hour_of_day", "date"),)
 
 class RoadPeakPeriodCount(models.Model):
     road_id = models.TextField()
