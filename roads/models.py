@@ -67,7 +67,8 @@ class RoadDailyCount(models.Model):
     road_id = models.TextField()
     date = models.DateField()
     trip_count = models.BigIntegerField()
-
+    highway_name = models.TextField()
+    
     class Meta:
         db_table = "road_daily_count"
         managed = False
@@ -77,6 +78,7 @@ class RoadHourlyCount(models.Model):
     road_id = models.TextField()
     hour_of_day = models.IntegerField()  # 0-23
     trip_count = models.BigIntegerField()
+    highway_name = models.TextField()
 
     class Meta:
         managed = False
@@ -87,6 +89,7 @@ class RoadPeakPeriodCount(models.Model):
     road_id = models.TextField()
     peak_period = models.TextField()  # 取值为 Morning Peak, Normal, Evening Peak
     trip_count = models.BigIntegerField()
+    highway_name = models.TextField()
 
     class Meta:
         db_table = 'road_peak_period_count'

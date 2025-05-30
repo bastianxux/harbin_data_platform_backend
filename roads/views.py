@@ -100,34 +100,6 @@ def road_flow(request):
 
     return Response(list(qs))
 
-
-@api_view(["GET"])
-def top_n_roads_by_day(request):
-    """
-    /api/top-roads/?date=<YYYY-MM-DD>&n=<count>
-    返回: [{"road_id": "xyz", "trip_count": 100}, ... ]
-    """
-    target_date = request.GET.get("date")  # yyyy-mm-dd
-    top_n_str = request.GET.get("n")
-
-    if not (target_date and top_n_str):
-        return Response({"detail": "date 和 n 都是必须的参数"}, status=400)
-
-    try:
-        top_n = int(top_n_str)
-        if top_n <= 0:
-            raise ValueError("n 必须是正整数")
-    except ValueError as e:
-        return Response({"detail": f"无效的n参数: {e}"}, status=400)
-
-    qs = (
-        RoadDailyCount.objects.filter(date=target_date)
-        .order_by("-trip_count")
-        .values("road_id", "trip_count")[:top_n]
-    )
-
-    return Response(list(qs))
-
 @api_view(['GET'])
 def road_day_flow(request):
     """
@@ -165,16 +137,47 @@ def road_day_flow(request):
     resp = [{'road_id': rid, 'traffic_cnt': result_map[rid]} for rid in req_ids]
     return Response(resp)
 
+
+@api_view(["GET"])
+def top_n_roads_by_day(request):
+    """
+    /api/top-roads/?date=<YYYY-MM-DD>&n=<count>&highway_name=<highway_name>
+    返回: [{"road_id": "xyz", "trip_count": 100}, ... ]
+    """
+    target_date = request.GET.get("date")  # yyyy-mm-dd
+    top_n_str = request.GET.get("n")
+    highway_name = request.GET.get("highway_name")
+
+    if not (target_date and top_n_str and highway_name):
+        return Response({"detail": "date 和 n 都是必须的参数"}, status=400)
+
+    try:
+        top_n = int(top_n_str)
+        if top_n <= 0:
+            raise ValueError("n 必须是正整数")
+    except ValueError as e:
+        return Response({"detail": f"无效的n参数: {e}"}, status=400)
+
+    qs = (
+        RoadDailyCount.objects.filter(date=target_date, highway_name=highway_name)
+        .order_by("-trip_count")
+        .values("road_id", "trip_count")[:top_n]
+    )
+
+    return Response(list(qs))
+
+
 @api_view(["GET"])
 def top_n_roads_by_hour(request):
     """
-    /api/top-roads-by-hour/?hour=<hour_of_day>&n=<count>
+    /api/top-roads-by-hour/?hour=<hour_of_day>&n=<count>&highway_name=<highway_name>
     返回: [{"road_id": "xyz", "trip_count": 100}, ... ]
     """
     hour_str = request.GET.get("hour")
     top_n_str = request.GET.get("n")
+    highway_name = request.GET.get("highway_name")
 
-    if not (hour_str and top_n_str):
+    if not (hour_str and top_n_str and highway_name):
         return Response({"detail": "hour 和 n 都是必须的参数"}, status=400)
 
     try:
@@ -188,23 +191,25 @@ def top_n_roads_by_hour(request):
         return Response({"detail": f"无效的参数: {e}"}, status=400)
 
     qs = (
-        RoadHourlyCount.objects.filter(hour_of_day=hour)
+        RoadHourlyCount.objects.filter(hour_of_day=hour, highway_name=highway_name)
         .order_by("-trip_count")
         .values("road_id", "trip_count")[:top_n]
     )
 
     return Response(list(qs))
 
+
 @api_view(["GET"])
 def top_n_roads_by_peak_period(request):
     """
-    /api/top-roads-by-peak/?peak_period=Morning Peak&n=10
+    /api/top-roads-by-peak/?peak_period=Morning Peak&n=10&highway_name=<highway_name>
     返回: [{"road_id": "xyz", "trip_count": 100, "peak_period": "Morning Peak"}, ... ]
     """
     peak_period = request.GET.get("peak_period")
     top_n_str = request.GET.get("n")
+    highway_name = request.GET.get("highway_name")
 
-    if not (peak_period and top_n_str):
+    if not (peak_period and top_n_str and highway_name):
         return Response({"detail": "peak_period 和 n 都是必须的参数"}, status=400)
 
     try:
@@ -215,12 +220,14 @@ def top_n_roads_by_peak_period(request):
         return Response({"detail": f"无效的n参数: {e}"}, status=400)
 
     from .models import RoadPeakPeriodCount
+
     qs = (
-        RoadPeakPeriodCount.objects.filter(peak_period=peak_period)
+        RoadPeakPeriodCount.objects.filter(peak_period=peak_period, highway_name=highway_name)
         .order_by("-trip_count")
         .values("road_id", "trip_count", "peak_period")[:top_n]
     )
     return Response(list(qs))
+
 
 @api_view(["GET"])
 def roads_by_highway_type(request):
