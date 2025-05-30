@@ -4,7 +4,8 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .models import BfmapWay, Highway
 from shapely import wkb
-from .models import RoadHighwayMapping
+from .models import RoadHighwayMapping, RoadPeakPeriodCount
+from django.db.models import OuterRef, Subquery
 
 
 @api_view(["GET"])
@@ -148,7 +149,7 @@ def top_n_roads_by_day(request):
     top_n_str = request.GET.get("n")
     highway_name = request.GET.get("highway_name")
 
-    if not (target_date and top_n_str and highway_name):
+    if not (target_date and top_n_str):
         return Response({"detail": "date 和 n 都是必须的参数"}, status=400)
 
     try:
@@ -158,13 +159,27 @@ def top_n_roads_by_day(request):
     except ValueError as e:
         return Response({"detail": f"无效的n参数: {e}"}, status=400)
 
-    qs = (
-        RoadDailyCount.objects.filter(date=target_date, highway_name=highway_name)
-        .order_by("-trip_count")
-        .values("road_id", "trip_count")[:top_n]
+
+    qs = RoadDailyCount.objects.filter(date=target_date)
+
+    if highway_name:
+        qs = qs.filter(highway_name=highway_name)
+
+    records = list(
+        qs.order_by("-trip_count").values('road_id', 'trip_count', 'date')[:top_n]
     )
 
-    return Response(list(qs))
+    # 获取 road_id 对应的 road_name
+    road_ids = [r["road_id"] for r in records]
+    name_map = {
+        str(w.gid): w.road_name for w in BfmapWay.objects.filter(gid__in=road_ids)
+    }
+
+    # 添加 road_name 字段
+    for r in records:
+        r["road_name"] = name_map.get(str(r["road_id"]), "未命名路段")
+
+    return Response(records)
 
 
 @api_view(["GET"])
@@ -177,7 +192,7 @@ def top_n_roads_by_hour(request):
     top_n_str = request.GET.get("n")
     highway_name = request.GET.get("highway_name")
 
-    if not (hour_str and top_n_str and highway_name):
+    if not (hour_str and top_n_str):
         return Response({"detail": "hour 和 n 都是必须的参数"}, status=400)
 
     try:
@@ -190,27 +205,40 @@ def top_n_roads_by_hour(request):
     except ValueError as e:
         return Response({"detail": f"无效的参数: {e}"}, status=400)
 
-    qs = (
-        RoadHourlyCount.objects.filter(hour_of_day=hour, highway_name=highway_name)
-        .order_by("-trip_count")
-        .values("road_id", "trip_count")[:top_n]
+    qs = RoadHourlyCount.objects.filter(hour_of_day=hour)
+
+    if highway_name:
+        qs = qs.filter(highway_name=highway_name)
+
+    records = list(
+        qs.order_by("-trip_count").values("road_id", "trip_count", "hour_of_day")[:top_n]
     )
 
-    return Response(list(qs))
+    # 获取 road_id 对应的 road_name
+    road_ids = [r["road_id"] for r in records]
+    name_map = {
+        str(w.gid): w.road_name for w in BfmapWay.objects.filter(gid__in=road_ids)
+    }
+
+    # 添加 road_name 字段
+    for r in records:
+        r["road_name"] = name_map.get(str(r["road_id"]), "未命名路段")
+
+    return Response(records)
 
 
 @api_view(["GET"])
 def top_n_roads_by_peak_period(request):
     """
-    /api/top-roads-by-peak/?peak_period=Morning Peak&n=10&highway_name=<highway_name>
+    /api/top-roads-by-peak/?peak_period=Morning Peak&n=10&highway_name=<optional>
     返回: [{"road_id": "xyz", "trip_count": 100, "peak_period": "Morning Peak"}, ... ]
     """
     peak_period = request.GET.get("peak_period")
     top_n_str = request.GET.get("n")
     highway_name = request.GET.get("highway_name")
 
-    if not (peak_period and top_n_str and highway_name):
-        return Response({"detail": "peak_period 和 n 都是必须的参数"}, status=400)
+    if not (peak_period and top_n_str):
+        return Response({"detail": "peak_period 和 n 是必须的参数"}, status=400)
 
     try:
         top_n = int(top_n_str)
@@ -219,14 +247,26 @@ def top_n_roads_by_peak_period(request):
     except ValueError as e:
         return Response({"detail": f"无效的n参数: {e}"}, status=400)
 
-    from .models import RoadPeakPeriodCount
+    # 查询 top-N 记录
+    qs = RoadPeakPeriodCount.objects.filter(peak_period=peak_period)
+    if highway_name:
+        qs = qs.filter(highway_name=highway_name)
 
-    qs = (
-        RoadPeakPeriodCount.objects.filter(peak_period=peak_period, highway_name=highway_name)
-        .order_by("-trip_count")
-        .values("road_id", "trip_count", "peak_period")[:top_n]
+    records = list(
+        qs.order_by("-trip_count").values("road_id", "trip_count", "peak_period")[:top_n]
     )
-    return Response(list(qs))
+
+    # 获取 road_id 对应的 road_name
+    road_ids = [r["road_id"] for r in records]
+    name_map = {
+        str(w.gid): w.road_name for w in BfmapWay.objects.filter(gid__in=road_ids)
+    }
+
+    # 添加 road_name 字段
+    for r in records:
+        r["road_name"] = name_map.get(str(r["road_id"]), "未命名路段")
+
+    return Response(records)
 
 
 @api_view(["GET"])
