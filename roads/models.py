@@ -104,3 +104,15 @@ class RoadHighwayMapping(models.Model):
     class Meta:
         db_table = 'road_highway_mapping'
         managed = False
+
+class RoadDurationStats(models.Model):
+    road_id = models.BigIntegerField()
+    highway_name = models.TextField(null=True) # highway_name 可以为空
+    duration_category = models.CharField(max_length=10) # 'short', 'mid', 'long'
+    trip_count = models.BigIntegerField()
+
+    class Meta:
+        db_table = 'road_duration_stats'
+        managed = False
+        # 根据需要，可以考虑添加索引或唯一约束
+        # unique_together = (('road_id', 'highway_name', 'duration_category'),)

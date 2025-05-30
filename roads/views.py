@@ -1,11 +1,20 @@
-from .models import Way
-from .models import RoadHourlyFlow, RoadDayFlow, RoadDailyCount, RoadHourlyCount
+from django.db.models import OuterRef, Subquery
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .models import BfmapWay, Highway
 from shapely import wkb
-from .models import RoadHighwayMapping, RoadPeakPeriodCount
-from django.db.models import OuterRef, Subquery
+
+from .models import (
+    BfmapWay,
+    Highway,
+    RoadDailyCount,
+    RoadDayFlow,
+    RoadDurationStats,
+    RoadHighwayMapping,
+    RoadHourlyCount,
+    RoadHourlyFlow,
+    RoadPeakPeriodCount,
+    Way,
+)
 
 
 @api_view(["GET"])
@@ -293,3 +302,49 @@ def roads_by_highway_type(request):
 
     road_ids = list(qs.values_list("road_id", flat=True))
     return Response(road_ids)
+
+
+@api_view(["GET"])
+def top_n_roads_by_duration_category(request):
+    """
+    /api/top-roads-by-duration/?duration_category=<category>&n=<count>&highway_name=<optional>
+    返回: [{"road_id": "xyz", "trip_count": 100, "duration_category": "short", "highway_name": "xxx"}, ... ]
+    """
+    highway_name = request.GET.get("highway_name")
+    duration_category = request.GET.get("duration_category")
+    top_n_str = request.GET.get("n")
+
+    if not (duration_category and top_n_str):
+        return Response({"detail": "duration_category 和 n 是必须的参数"}, status=400)
+
+    if duration_category not in ['short', 'mid', 'long']:
+        return Response({"detail": "duration_category 必须是 'short', 'mid', 或 'long' 之一"}, status=400)
+
+    try:
+        top_n = int(top_n_str)
+        if top_n <= 0:
+            raise ValueError("n 必须是正整数")
+    except ValueError as e:
+        return Response({"detail": f"无效的n参数: {e}"}, status=400)
+
+    qs = RoadDurationStats.objects.filter(duration_category=duration_category)
+
+    if highway_name:
+        qs = qs.filter(highway_name=highway_name)
+
+    records = list(
+        qs.order_by("-trip_count")
+        .values("road_id", "trip_count", "duration_category", "highway_name")[:top_n]
+    )
+
+    # 获取 road_id 对应的 road_name (路段名)
+    road_ids = [r["road_id"] for r in records]
+    name_map = {
+        str(w.gid): w.road_name for w in BfmapWay.objects.filter(gid__in=road_ids)
+    }
+
+    # 添加 road_name 字段
+    for r in records:
+        r["road_name"] = name_map.get(str(r["road_id"]), "未命名路段")
+
+    return Response(records)
