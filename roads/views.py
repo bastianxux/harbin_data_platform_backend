@@ -170,15 +170,16 @@ def top_n_roads_by_day(request):
 @api_view(["GET"])
 def top_n_roads_by_hour(request):
     """
-    /api/top-roads-by-hour/?hour=<hour_of_day>&n=<count>&highway_name=<highway_name>
+    /api/top-roads-by-hour/?date=<YYYY-MM-DD>&hour=<hour_of_day>&highway_name=<highway_name>&n=<count>
     返回: [{"road_id": "xyz", "trip_count": 100}, ... ]
     """
+    date_str = request.GET.get("date")
     hour_str = request.GET.get("hour")
     top_n_str = request.GET.get("n")
     highway_name = request.GET.get("highway_name")
 
-    if not (hour_str and top_n_str and highway_name):
-        return Response({"detail": "hour 和 n 都是必须的参数"}, status=400)
+    if not (date_str and hour_str and top_n_str and highway_name):
+        return Response({"detail": "date, hour, n 和 highway_name 都是必须的参数"}, status=400)
 
     try:
         hour = int(hour_str)
@@ -191,7 +192,7 @@ def top_n_roads_by_hour(request):
         return Response({"detail": f"无效的参数: {e}"}, status=400)
 
     qs = (
-        RoadHourlyCount.objects.filter(hour_of_day=hour, highway_name=highway_name)
+        RoadHourlyCount.objects.filter(date=date_str, hour_of_day=hour, highway_name=highway_name)
         .order_by("-trip_count")
         .values("road_id", "trip_count")[:top_n]
     )
