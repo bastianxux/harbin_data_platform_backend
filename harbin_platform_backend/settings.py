@@ -13,8 +13,10 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from pathlib import Path
 import os
 
-GDAL_LIBRARY_PATH = '/opt/homebrew/opt/gdal/lib/libgdal.dylib'
-GEOS_LIBRARY_PATH = '/opt/homebrew/opt/geos/lib/libgeos_c.dylib'
+# GDAL_LIBRARY_PATH = '/opt/homebrew/opt/gdal/lib/libgdal.dylib'
+# GEOS_LIBRARY_PATH = '/opt/homebrew/opt/geos/lib/libgeos_c.dylib'\
+GEOS_LIBRARY_PATH="D:/Anaconda/envs/har/Library/bin/geos_c.dll"
+GDAL_LIBRARY_PATH="D:/Anaconda/envs/hb/Lib/site-packages/osgeo/gdal.dll"
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.

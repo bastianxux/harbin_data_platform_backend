@@ -116,3 +116,15 @@ class RoadDurationStats(models.Model):
         managed = False
         # 根据需要，可以考虑添加索引或唯一约束
         # unique_together = (('road_id', 'highway_name', 'duration_category'),)
+
+class TaxiPickup(models.Model):
+    pickup_time = models.DateTimeField(db_index=True)
+    pickup_date = models.DateField(db_index=True)     # ← 新增
+    pickup_hm   = models.TimeField()                  # ← 新增
+    lng         = models.FloatField()
+    lat         = models.FloatField()
+    period      = models.CharField(max_length=20)
+
+    class Meta:
+        db_table = 'taxi_pickups'
+        managed = False

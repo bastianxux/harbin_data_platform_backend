@@ -2,7 +2,8 @@ from django.db.models import OuterRef, Subquery
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from shapely import wkb
-
+from datetime import datetime
+from .utils import dbscan_geo
 from .models import (
     BfmapWay,
     Highway,
@@ -14,6 +15,7 @@ from .models import (
     RoadHourlyFlow,
     RoadPeakPeriodCount,
     Way,
+    TaxiPickup,
 )
 
 
@@ -348,3 +350,53 @@ def top_n_roads_by_duration_category(request):
         r["road_name"] = name_map.get(str(r["road_id"]), "未命名路段")
 
     return Response(records)
+
+
+@api_view(['GET'])
+def pickup_clusters(request):
+    """
+    GET /api/pickup-clusters/?start=2015-01-06T14:00&end=2015-01-06T15:00
+                            &period=Morning%20Peak&eps=200&minpts=20
+    """
+    # 1) 解析参数 -----------------------------------------------------------
+    start  = request.GET.get('start')   # ISO-8601 字符串
+    end    = request.GET.get('end')
+    period = request.GET.get('period')      # 可选
+    eps    = int(request.GET.get('eps',    200))   # m
+    minpts = int(request.GET.get('minpts', 100))
+
+    if not (start and end):
+        return Response({"error": "必须提供 start 和 end 参数"},
+                        status=400)
+
+    start_dt = datetime.fromisoformat(start)
+    end_dt   = datetime.fromisoformat(end)
+
+    # 2) 取数据 ------------------------------------------------------------
+    qs = TaxiPickup.objects.filter(pickup_time__gte=start_dt,
+                                   pickup_time__lt=end_dt)
+    if period:
+        qs = qs.filter(period=period)
+
+    points = list(qs.values_list('lat', 'lng'))      # [(lat,lng),...]
+
+    # 3) 聚类 --------------------------------------------------------------
+    clusters = dbscan_geo(points, eps_m=eps, min_samples=minpts)
+
+    # 4) 返回 GeoJSON-like -------------------------------------------------
+    features = [{
+        "type": "Feature",
+        "geometry": {
+            "type": "Point",
+            "coordinates": [c["centroid"][1], c["centroid"][0]]  # lng,lat
+        },
+        "properties": {
+            "cluster_id": c["id"],
+            "size":       c["size"]
+        }
+    } for c in clusters]
+
+    return Response({
+        "type": "FeatureCollection",
+        "features": features
+    })
