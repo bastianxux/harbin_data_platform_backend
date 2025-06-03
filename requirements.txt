@@ -7,3 +7,4 @@ typing_extensions==4.13.2
 psycopg2-binary==2.9.10
 shapely
 gdal
+scikit-learn
